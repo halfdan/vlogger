@@ -28,6 +28,7 @@
 # 1.1   bugfix release
 # 1.2   support for mod_logio
 # 1.3	various contributed bugfixes
+# 1.4   added ignore www subdomain and subdir logging
 #
 # 
 # TODO:
@@ -38,7 +39,7 @@ package vlogger;
 
 $ENV{PATH} = "/bin:/usr/bin";
 
-my $VERSION = "1.3";
+my $VERSION = "1.4";
 
 =head1 NAME
 
@@ -588,7 +589,9 @@ sub usage {
     print "  -d CONFIG                   use DBI usage tracker (see perldoc vlogger)\n";
     print "  -i                          extract mod_logio instead of filesize\n";
     print "  -h                          display this help\n";
-    print "  -v                          output version information\n\n";
+    print "  -w SUBDIR                   write to subdir\n";
+    print "  -v                          output version information\n";
+    print "  -x                          ignore www subdomain\n\n";
     print "TEMPLATE may be a filename with Date::Format codes.  The default template\n";
     print "is %m%d%Y-access.log.  SYMLINK is the name of a file that will be linked to\n";
     print "the most recent file inside the log directory.  The default is access.log.\n";
