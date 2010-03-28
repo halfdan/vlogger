@@ -111,8 +111,14 @@ or "%m%d%Y-error.log".  When using the -r option, the default becomes
 -h
 	Displays help.
 
+-w SUBDIR
+	Write to subdir.
+
 -v
 	Prints version information.
+
+-x
+	Ignore www subdomain.
 
 =head1 DBI USAGE TRACKER
 
@@ -150,7 +156,7 @@ use IO::Handle;
 
 # get command line options
 our %OPTS;
-getopts( 'f:t:s:hu:g:aeivwr:d:', \%OPTS );
+getopts( 'f:t:s:hu:g:aeivxw:r:d:', \%OPTS );
 
 # print out version
 if ( $OPTS{'v'} ) {
@@ -179,6 +185,13 @@ if ( $ARGV[0] ) {
 }
 $LOGDIR =~ /(.*)/;
 $LOGDIR = $1;
+
+# enable subdir logging
+my $SUBDIR;
+if ( $OPTS{'w'} ) {
+    $SUBDIR = $OPTS{'w'};
+    print $SUBDIR;
+}
 
 # change uid/gid if requested (and running as root)
 if ( $> == "0" ) {
@@ -381,7 +394,7 @@ else {
         $vhost =~ /(.*)/o;
         $vhost = $1;
 
-	if ( $OPTS{'w'} ) {
+	if ( $OPTS{'x'} ) {
 	    if ( $vhost =~ m/^www\..*/ ) {
 	        $vhost =~ s/^www\.//;
 	    }
@@ -429,9 +442,30 @@ else {
                 mkdir("${vhost}");
             }
 
+            my $path;
+            if ( $OPTS{'w'} ) {
+                $path = "${vhost}/${SUBDIR}";
+
+                if ($path =~ /^([-\/\@\w.]+)$/) {
+                    $path = $1; # $data now untainted
+                }
+
+                # check if subdirectory is there (if needed)
+                unless ( -d "${path}" ) {
+                    mkdir("${path}");
+                }
+            }
+            else {
+                $path = "${vhost}";
+            }
+
+            if ($path =~ /^([-\/\@\w.]+)$/) {
+                $path = $1; # $data now untainted
+            }
+
             # open the file using the template
-            open $vhost, ">>${vhost}/" . time2str( $TEMPLATE, time() )
-              or die ( "can't open $LOGDIR/${vhost}/"
+            open $vhost, ">>${path}/" . time2str( $TEMPLATE, time() )
+              or die ( "can't open $LOGDIR/${path}/"
                 . time2str( $TEMPLATE, time() ) );
 
             # autoflush the handle unless -a
@@ -441,12 +475,13 @@ else {
 
             # make a symlink if -s
             if ( $OPTS{'s'} ) {
-                chdir("${vhost}");
+                chdir("${path}");
                 if ( -l $OPTS{'s'} ) {
                     unlink( $OPTS{'s'} );
                 }
                 symlink( time2str( $TEMPLATE, time() ), $OPTS{'s'} );
                 chdir("..");
+                chdir("..") if $path =~ m/\//;
             }
         }
 
